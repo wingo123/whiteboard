@@ -2,6 +2,7 @@ package com.vinnyoodles.vincent.whiteboardclient;
 
 import android.app.Fragment;
 import android.app.FragmentManager;
+import android.content.Context;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.graphics.Point;
@@ -11,8 +12,13 @@ import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.Display;
+import android.widget.Toast;
+
+import com.vinnyoodles.vincent.whiteboardclient.log.MyLog;
+import com.vinnyoodles.vincent.whiteboardclient.utils.MsgEvent;
 
 import java.net.URISyntaxException;
+import java.util.Date;
 
 import io.socket.client.IO;
 import io.socket.client.Socket;
@@ -25,7 +31,10 @@ public class MainActivity extends AppCompatActivity implements FragmentCallback 
     private NetworkReceiver networkReceiver;
     private boolean receiverRegistered = false;
     private AudioHelper audioHelper;
-
+    private static Context context;
+    public static Context getContext() {
+        return context;
+    }//定义全局的Context
     // Screen dimensions
     private double width;
     private double height;
@@ -34,7 +43,7 @@ public class MainActivity extends AppCompatActivity implements FragmentCallback 
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
+        context = getApplicationContext();
         if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
             String[] permissions = new String[]{android.Manifest.permission.RECORD_AUDIO};
             ActivityCompat.requestPermissions(this, permissions, 1);
@@ -53,7 +62,8 @@ public class MainActivity extends AppCompatActivity implements FragmentCallback 
                 audioHelper.startStream(getSocketInstance());
             }
         }
-
+//        EventBus.getDefault().post(new MsgEvent("Write Log!!!"));
+//        MyLog.v("test","Write Log ~~");
         // Show the room fragment to request a room name.
         if (userName == null)
             setupRoomFragment();
@@ -187,4 +197,18 @@ public class MainActivity extends AppCompatActivity implements FragmentCallback 
         }
         roomFragment.setCallback(this);
     }
+
+//    //事件回调函数
+//    @Subscribe(threadMode = ThreadMode.MAIN)
+//    public void onEventMainThread(MsgEvent event) {
+//        Toast.makeText(getApplicationContext(), "onEventMainThread", Toast.LENGTH_LONG).show();//Toast打印
+//        if (sb.toString().length() > 7777) {
+//            sb = new StringBuffer();
+//        }
+//        Date date = new Date(System.currentTimeMillis());
+//        sb.append(sd.format(date) + "_" + event.getMsg()).append("\r\n");
+//        msg.setText(sb.toString());
+//        sv.fullScroll(View.FOCUS_DOWN);
+////        Toast.makeText(this,event.getMsg(),Toast.LENGTH_SHORT).show();
+//    }
 }
