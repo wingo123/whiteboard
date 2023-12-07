@@ -49,7 +49,7 @@ public class CanvasView extends View {
     public List<CanvasPath> globalPaths;
     public Bitmap immutableBitmap;
     public Bitmap bitmap;
-    private Canvas localCanvas;
+//    private Canvas localCanvas;
     private Paint paint;
     private Paint transparent;
     private int currentPaintType;
@@ -121,20 +121,20 @@ public class CanvasView extends View {
 
     public void loadBitmap(Bitmap bmp) {
         this.bitmap = bmp;
-        localCanvas = new Canvas(this.bitmap);
+//        localCanvas = new Canvas(this.bitmap);
     }
 
     @Override
     public void onDraw(Canvas canvas) {
-        if (immutableBitmap != null && !immutableBitmap.isRecycled()) {
-            canvas.save();
-            Matrix tMatrix = new Matrix(preMatrix);
-            tMatrix.postConcat(matrix);
-            canvas.setMatrix(tMatrix);
-            localCanvas.drawBitmap(immutableBitmap, 0, 0, paint);
-            canvas.drawBitmap(immutableBitmap, 0, 0, paint);
-            canvas.restore();
-        }
+//        if (immutableBitmap != null && !immutableBitmap.isRecycled()) {
+//            canvas.save();
+//            Matrix tMatrix = new Matrix(preMatrix);
+//            tMatrix.postConcat(matrix);
+//            canvas.setMatrix(tMatrix);
+//            localCanvas.drawBitmap(immutableBitmap, 0, 0, paint);
+//            canvas.drawBitmap(immutableBitmap, 0, 0, paint);
+//            canvas.restore();
+//        }
 
         drawPaths(canvas);
 //        for (CanvasPath p : localPaths)
@@ -240,8 +240,6 @@ public class CanvasView extends View {
     private void drawPaths(Canvas canvas){
         canvas.save();
         canvas.setMatrix(matrix);
-//        localCanvas.save();
-//        localCanvas.setMatrix(matrix);
         for (CanvasPath p : localPaths) {
 //            canvas.setMatrix(p.getMatrix());
             drawPath(p, canvas);
@@ -251,7 +249,6 @@ public class CanvasView extends View {
             drawPath(p, canvas);
         }
         canvas.restore();
-//        localCanvas.restore();
     }
     private void drawPath(CanvasPath p, Canvas canvas) {
         Path path = getResources().getConfiguration().orientation == getResources().getConfiguration().ORIENTATION_LANDSCAPE ? p.landscape : p.portrait;
@@ -274,7 +271,7 @@ public class CanvasView extends View {
         if (preScale > 1f) {
             curPaint.setStrokeWidth(strokeWidth / p.getScale());//强制修改笔款，这个修改影响全局
         }
-        localCanvas.drawPath(oPath,curPaint);
+//        localCanvas.drawPath(oPath,curPaint);
         canvas.drawPath(path, curPaint);
         curPaint.setStrokeWidth(strokeWidth);//画完还原
 //        canvas.restore();

@@ -127,7 +127,7 @@ public class CanvasFragment extends Fragment implements SocketEventEmitter, View
      * Emit canvas to save in server.
      */
     public void saveBitmap() {
-        new SaveTask().execute();
+//        new SaveTask().execute();
     }
 
     /**
