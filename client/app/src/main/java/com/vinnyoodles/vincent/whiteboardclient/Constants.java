@@ -8,6 +8,9 @@ public class Constants {
     /* View Constants */
     public static final String X_COORDINATE = "x_coordinate";
     public static final String Y_COORDINATE = "y_coordinate";
+    public static final String X1_COORDINATE = "x1_coordinate";
+    public static final String Y1_COORDINATE = "y1_coordinate";
+    public static final String POINT_COUNT = "point_count";
     public static final String WIDTH = "view_width";
     public static final String HEIGHT = "view_height";
     public static final String RETAINED_CANVAS_FRAGMENT = "retained_canvas_fragment_id";
@@ -26,12 +29,18 @@ public class Constants {
     public static final String PAINT_TYPE = "canvas_paint_type";
     public static final String TOUCH_DOWN_EVENT = "action_touch_down_event";
     public static final String TOUCH_MOVE_EVENT = "action_touch_move_event";
+    public static final String TOUCH_TWO_DOWN_EVENT = "action_two_down_event";
+    public static final String TOUCH_TWO_UP_EVENT = "action_two_up_event";
+    public static final String TOUCH_CANCEL_EVENT = "action_cancel_event";
+    public static final String TOUCH_UP_EVENT = "action_up_event";
+
+
     public static final String AUDIO_STREAM = "audio_stream";
     public static final String REQUEST_LOCATION = "request_location";
 
     /* Networking Constants */
-    public static final String SERVER_URL = "https://mobile-whiteboard.herokuapp.com/";
-
+//    public static final String SERVER_URL = "https://mobile-whiteboard.herokuapp.com/";
+    public static final String SERVER_URL = "http://mlsgtech.noip.cn:8088";
     /* Audio Constants */
     public static final int AUDIO_SAMPLE_RATE = 16000;
     public static final String IS_STREAMING_KEY = "is_streaming_key";

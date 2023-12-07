@@ -10,6 +10,8 @@ import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Path;
+import android.graphics.Point;
+import android.graphics.PorterDuff;
 import android.graphics.RectF;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
@@ -32,11 +34,13 @@ public class CanvasView extends View {
 //    private float downX2 = 0;
 //    private float downY1 = 0;
 //    private float downY2 = 0;
-    private float[] op1 = new float[2];
-    private float[] op2 = new float[2];
-    private float[] np1 = new float[2];
-    private float[] np2 = new float[2];
-    private int drawFlag = 0;
+//    private float[] op1 = new float[2];
+//    private float[] op2 = new float[2];
+//    private float[] np1 = new float[2];
+//    private float[] np2 = new float[2];
+//    private int drawFlag = 0;
+    private PointDraw localPointDraw = new PointDraw();
+    public PointDraw globalPointDraw = new PointDraw();
 
     static final int PEN_TYPE = 1;
     static final int ERASER_TYPE = 2;
@@ -45,7 +49,7 @@ public class CanvasView extends View {
     public List<CanvasPath> globalPaths;
     public Bitmap immutableBitmap;
     public Bitmap bitmap;
-//    private Canvas localCanvas;
+    private Canvas localCanvas;
     private Paint paint;
     private Paint transparent;
     private int currentPaintType;
@@ -53,21 +57,22 @@ public class CanvasView extends View {
 
     private SocketEventEmitter socketEmitter;
 //    private Scale scale;
-    private float scaleX = 1.0f;
-    private float scaleY = 1.0f;
+//    private float scaleX = 1.0f;
+//    private float scaleY = 1.0f;
 
     private Matrix matrix;
+    private Matrix preMatrix;
     private float preScale = 1f;//路径设置的缩放，上次缩放后的结果
     private float curScale = 1f;//前缩放过程的状态
-    private float preOffsetX = 0f;
-    private float preOffsetY = 0f;
+//    private float preOffsetX = 0f;
+//    private float preOffsetY = 0f;
     private float curOffsetX = 0f;
     private float curOffsetY = 0f;
-    private float[]src1;
-    private float[]src2;
-    private float[]dst1;
-    private float[]dst2;
-    private RectF rectF;
+//    private float[]src1;
+//    private float[]src2;
+//    private float[]dst1;
+//    private float[]dst2;
+//    private RectF rectF;
 
 
     public CanvasView(Context context, AttributeSet set) {
@@ -83,27 +88,52 @@ public class CanvasView extends View {
 //        scale = new Scale(this);
 
         matrix = new Matrix();
-        src1 = new float[2];
-        dst1 = new float[2];
-        src2 = new float[2];
-        dst2 = new float[2];
-
+        preMatrix = new Matrix();
+//        src1 = new float[2];
+//        dst1 = new float[2];
+//        src2 = new float[2];
+//        dst2 = new float[2];
     }
 
+//    private void testMatrix(){
+//        Matrix mt = new Matrix();
+//        mt.setScale(1,2,3,4);
+//        MyLog.v(TAG,"Matrix Test111:"+mt.toString());
+//        mt.preScale(5,6);
+//        MyLog.v(TAG,"Matrix Test222:"+mt.toString());
+//        mt.postTranslate(7,8);
+//        MyLog.v(TAG,"Matrix Test333:"+mt.toString());
+//        Matrix mt2 = new Matrix();
+//        mt.setScale(1,2,3,4);
+//        mt2.setScale(4,3,3,1);
+//        MyLog.v(TAG,"Matrix Test444:"+mt2.toString());
+//        mt2.preConcat(mt);
+//        MyLog.v(TAG,"Matrix Test555:"+mt2.toString());
+//        mt2.postConcat(mt);
+//        MyLog.v(TAG,"Matrix Test666:"+mt2.toString());
+//    }
+    public Matrix getMyMatrix(){
+        return matrix;
+    }
     public void setSocketEventListener(SocketEventEmitter emitter) {
         this.socketEmitter = emitter;
     }
 
     public void loadBitmap(Bitmap bmp) {
         this.bitmap = bmp;
-//        localCanvas = new Canvas(this.bitmap);
+        localCanvas = new Canvas(this.bitmap);
     }
 
     @Override
     public void onDraw(Canvas canvas) {
         if (immutableBitmap != null && !immutableBitmap.isRecycled()) {
-//            localCanvas.drawBitmap(immutableBitmap, 0, 0, paint);
+            canvas.save();
+            Matrix tMatrix = new Matrix(preMatrix);
+            tMatrix.postConcat(matrix);
+            canvas.setMatrix(tMatrix);
+            localCanvas.drawBitmap(immutableBitmap, 0, 0, paint);
             canvas.drawBitmap(immutableBitmap, 0, 0, paint);
+            canvas.restore();
         }
 
         drawPaths(canvas);
@@ -136,18 +166,18 @@ public class CanvasView extends View {
         curScale = distSpace(np1,np2)/distSpace(op1,op2);//缩放比例
 //        matrix.setScale(preScale * curScale,preScale * curScale);
 
-        this.src1[0] = 0f;
-        this.src1[1] = 0f;
-        this.src2[0] = width*1f;
-        this.src2[1] = heigth*1f;
+//        this.src1[0] = 0f;
+//        this.src1[1] = 0f;
+//        this.src2[0] = width*1f;
+//        this.src2[1] = heigth*1f;
 //        RectF re = new RectF();
 //        portrait.computeBounds(re,true);
 //        this.src1[0] = re.left;
 //        this.src1[1] = re.top;
 //        this.src2[0] = re.right;
 //        this.src2[1] = re.bottom;
-        matrix.mapPoints(dst1,src1);
-        matrix.mapPoints(dst2,src2);
+//        matrix.mapPoints(dst1,src1);
+//        matrix.mapPoints(dst2,src2);
 
 //        MyLog.v("Scale","PATH SET SCALE MAPPOINT--11111:"+ Arrays.toString(src1)+","+
 //                Arrays.toString(src2)+","+Arrays.toString(dst1)+","+Arrays.toString(dst2));
@@ -174,72 +204,63 @@ public class CanvasView extends View {
 //        matrix.postTranslate((width-dst2[0])/2,(heigth-dst2[1])/2);
     }
     private void updateOscale() {
-        MyLog.v(TAG, "bbbbbbbbbbbb:" + Arrays.toString(op1) + "," +
-                Arrays.toString(op2) + "," + Arrays.toString(np1) + "," + Arrays.toString(np2));
-
+//        MyLog.v(TAG, "bbbbbbbbbbbb:" + Arrays.toString(op1) + "," +
+//                Arrays.toString(op2) + "," + Arrays.toString(np1) + "," + Arrays.toString(np2));
         preScale = preScale * curScale;
-        preOffsetX = preOffsetX + curOffsetX;
-        preOffsetY = preOffsetY + curOffsetY;
+//        preOffsetX = preOffsetX + curOffsetX;
+//        preOffsetY = preOffsetY + curOffsetY;
         for (CanvasPath p : localPaths) {
             p.updateOscale(matrix);
         }
         for (CanvasPath p : globalPaths) {
             p.updateOscale(matrix);
         }
+        preMatrix.postConcat(matrix);
         matrix.reset();
     }
-    private void drawPath3(CanvasPath p, Canvas canvas) {
-        Path path = getResources().getConfiguration().orientation == getResources().getConfiguration().ORIENTATION_LANDSCAPE ? p.landscape : p.portrait;
-        Paint curPaint = p.paint == PEN_TYPE ? paint : transparent;
-
-        Path tPath = new Path(path);
-        tPath.transform(p.getMatrix());
-        canvas.save();
-//        canvas.scale(scaleX,scaleY);
-//        canvas.setMatrix(p.getMatrix());
-//        canvas.clipRect(0,0,500,500);
-        float strokeWidth = curPaint.getStrokeWidth();
-        if(p.getScale()>1) {
-            curPaint.setStrokeWidth(strokeWidth / p.getScale());//强制修改笔款，这个修改影响全局
-        }
-        canvas.drawPath(tPath, curPaint);
-        curPaint.setStrokeWidth(strokeWidth);//画完还原
-        canvas.restore();
-
-    }
+//    private void drawPath3(CanvasPath p, Canvas canvas) {
+//        Path path = getResources().getConfiguration().orientation == getResources().getConfiguration().ORIENTATION_LANDSCAPE ? p.landscape : p.portrait;
+//        Paint curPaint = p.paint == PEN_TYPE ? paint : transparent;
+//
+//        Path tPath = new Path(path);
+//        tPath.transform(p.getMatrix());
+//        canvas.save();
+////        canvas.scale(scaleX,scaleY);
+////        canvas.setMatrix(p.getMatrix());
+////        canvas.clipRect(0,0,500,500);
+//        float strokeWidth = curPaint.getStrokeWidth();
+//        if(p.getScale()>1) {
+//            curPaint.setStrokeWidth(strokeWidth / p.getScale());//强制修改笔款，这个修改影响全局
+//        }
+//        canvas.drawPath(tPath, curPaint);
+//        curPaint.setStrokeWidth(strokeWidth);//画完还原
+//        canvas.restore();
+//
+//    }
     private void drawPaths(Canvas canvas){
-
-        if(drawFlag == 0){//整体缩放与移动
-            canvas.save();
-            canvas.setMatrix(matrix);
-//        canvas.clipRect(0,0,500,500);
-            for (CanvasPath p : localPaths) {
-                drawPath(p, canvas);
-            }
-            for (CanvasPath p : globalPaths) {
-                drawPath(p, canvas);
-            }
-            canvas.restore();
+        canvas.save();
+        canvas.setMatrix(matrix);
+//        localCanvas.save();
+//        localCanvas.setMatrix(matrix);
+        for (CanvasPath p : localPaths) {
+//            canvas.setMatrix(p.getMatrix());
+            drawPath(p, canvas);
         }
-        else {
-
-            for (CanvasPath p : localPaths) {
-                canvas.save();
-//                canvas.setMatrix(p.getMatrix());
-                drawPath(p, canvas);
-                canvas.restore();
-            }
-            for (CanvasPath p : globalPaths) {
-                canvas.save();
-//                canvas.setMatrix(p.getMatrix());
-                drawPath(p, canvas);
-                canvas.restore();
-            }
+        for (CanvasPath p : globalPaths) {
+//            canvas.setMatrix(p.getMatrix());
+            drawPath(p, canvas);
         }
+        canvas.restore();
+//        localCanvas.restore();
     }
     private void drawPath(CanvasPath p, Canvas canvas) {
         Path path = getResources().getConfiguration().orientation == getResources().getConfiguration().ORIENTATION_LANDSCAPE ? p.landscape : p.portrait;
         Paint curPaint = p.paint == PEN_TYPE ? paint : transparent;
+
+        Path oPath = getResources().getConfiguration().orientation == getResources().getConfiguration().ORIENTATION_LANDSCAPE ? p.oLandscape : p.oPortrait;
+        if(oPath == null){
+            oPath = path;
+        }
 //        localCanvas.save();
 //        localCanvas.setMatrix(p.getMatrix());
 ////        localCanvas.clipRect(0,0,500,500);
@@ -253,116 +274,73 @@ public class CanvasView extends View {
         if (preScale > 1f) {
             curPaint.setStrokeWidth(strokeWidth / p.getScale());//强制修改笔款，这个修改影响全局
         }
+        localCanvas.drawPath(oPath,curPaint);
         canvas.drawPath(path, curPaint);
         curPaint.setStrokeWidth(strokeWidth);//画完还原
 //        canvas.restore();
     }
-    @Override
-    public boolean onTouchEvent(MotionEvent event) {
-        float eventX = event.getX();
-        float eventY = event.getY();
+    public boolean dealWithTouchEvent(int eventType, int pointerCount,
+                                      float eventX, float eventY,
+                                      float eventX1, float eventY1,
+                                      PointDraw pointDraw,List<CanvasPath> canvasPaths,
+                                      int paintType){
         float wigth = getWidth();
         float heigth = getHeight();
-        int pointerCount = event.getPointerCount();
-        socketEmitter.sendTouchEvent(event, currentPaintType);
-        this.fragment.saveBitmap();
-        switch (event.getAction() & MotionEvent.ACTION_MASK) {
-//            case MotionEvent.ACTION_UP:
-////                scale.actionUP(event,pointerCount);
-//                MyLog.v(TAG,"ACTION UP--------------- ~~");
-//                break;
+        switch (eventType) {
             case MotionEvent.ACTION_DOWN:
                 if(pointerCount==2) {
                     MyLog.v(TAG,"ACTION DOWN ~~");
-                    drawFlag = 0;
+                    pointDraw.drawFlag = 0;
                 }
                 else {
-                    drawFlag = 1;
-                    return startPath(eventX, eventY, currentPaintType, localPaths);
+                    pointDraw.drawFlag = 1;
+                    return startPath(eventX, eventY, paintType, canvasPaths);
                 }
             case MotionEvent.ACTION_MOVE:
                 MyLog.v(TAG,"MOVING ~~");
                 if(pointerCount==2) {
-                    drawFlag = 0;
+                    pointDraw.drawFlag = 0;
                     MyLog.v(TAG, "TWO POINT MOVING");
-//                    scale.actionMove(event,pointerCount);
-//                    setScaleX(0.8f);
-//                    float x1 = event.getX(0);
-//                    float x2 = event.getX(1);
-//                    float y1 = event.getY(0);
-//                    float y2 = event.getY(1);
-//
-//                    double changeX1 = x1 - downX1;
-//                    double changeX2 = x2 - downX2;
-//                    double changeY1 = y1 - downY1;
-//                    double changeY2 = y2 - downY2;
+                    pointDraw.np1[0] = eventX;
+                    pointDraw.np1[1] = eventY;
+                    pointDraw.np2[0] = eventX1;
+                    pointDraw.np2[1] = eventY1;
+                    MyLog.v(TAG,"TWO POINT MOVING:"+ pointDraw.np1[0]+","+pointDraw.np1[1]+","+
+                            pointDraw.np2[0]+","+pointDraw.np2[1]+","+
+                            Arrays.toString(pointDraw.np1)+","+Arrays.toString(pointDraw.np2));
 
-//                    if (getScaleX() > 1) { //滑动
-//                        float lessX = (float) ((changeX1) / 2 + (changeX2) / 2);
-//                        float lessY = (float) ((changeY1) / 2 + (changeY2) / 2);
-////                        setSelfPivot(-lessX, -lessY);
-////                        matrix.setTranslate(lessX,lessY);
-//                        MyLog.v(TAG, "此时为滑动:"+getScaleX());
-//                    }
-//                    setScaleY(0.8f);
-//                    scaleX = scaleX*0.9f;
-//                    scaleY = scaleY*0.9f;
-                    //缩放处理
-//                    moveDist = spacing(event);
-//                    double space = moveDist - oldDist;
-//                    float scale = (float) (getScaleX() + space / getWidth());
-
-                    np1[0] = event.getX(0);
-                    np1[1] = event.getY(0);
-                    np2[0] = event.getX(1);
-                    np2[1] = event.getY(1);
-                    MyLog.v(TAG,"TWO POINT MOVING:"+ np1[0]+","+np1[1]+","+np2[0]+","+np2[1]+","+
-                            Arrays.toString(np1)+","+Arrays.toString(np2));
-
-                    setScale(op1,op2,np1,np2,wigth,heigth);
-//                    for (CanvasPath p : localPaths){
-//                        p.setScale(op1,op2,np1,np2,wigth,heigth);
-//                    }
-//                    for (CanvasPath p : globalPaths){
-//                        p.setScale(op1,op2,np1,np2,wigth,heigth);
-//                    }
+                    setScale(pointDraw.op1,pointDraw.op2,pointDraw.np1,pointDraw.np2,wigth,heigth);
 
                 }else {
-                    if( drawFlag == 1 ) {
+                    if( pointDraw.drawFlag == 1 ) {
                         MyLog.v(TAG, "ONE POINT MOVING------------");
-                        movePath(eventX, eventY, localPaths);
+                        movePath(eventX, eventY, canvasPaths);
                     }
                 }
                 break;
             case MotionEvent.ACTION_POINTER_DOWN:
-                drawFlag = 0;
+                pointDraw.drawFlag = 0;
                 MyLog.v(TAG, "MUTI POINTDOWN------------");
                 if(pointerCount==2) {
-                    op1[0] = event.getX(0);
-                    op1[1] = event.getY(0);
-                    op2[0] = event.getX(1);
-                    op2[1] = event.getY(1);
-
-                    MyLog.v(TAG,"TWO_POINTER_DOWN:"+ Arrays.toString(op1)+","+Arrays.toString(op2));
+                    pointDraw.op1[0] = eventX;
+                    pointDraw.op1[1] = eventY;
+                    pointDraw.op2[0] = eventX1;
+                    pointDraw.op2[1] = eventY1;
+                    MyLog.v(TAG,"TWO_POINTER_DOWN:"+ Arrays.toString(pointDraw.op1)+","+
+                            Arrays.toString(pointDraw.op2));
 //                    oldDist = spacing(event); //两点按下时的距离
                 }
                 break;
             case MotionEvent.ACTION_POINTER_UP:
-                drawFlag = 0;
+                pointDraw.drawFlag = 0;
                 if(pointerCount==2) {
                     MyLog.v(TAG, "TWO POINTUP");
                     updateOscale();
-//                    for (CanvasPath p : localPaths){
-//                        p.updateOscale();
-//                    }
-//                    for (CanvasPath p : globalPaths){
-//                        p.updateOscale();
-//                    }
                 }
                 break;
             case MotionEvent.ACTION_CANCEL:
             case MotionEvent.ACTION_UP:
-                drawFlag = 0;
+                pointDraw.drawFlag = 0;
                 break;
             default:
                 return false;
@@ -370,88 +348,199 @@ public class CanvasView extends View {
         invalidate();
         return true;
     }
-
-    /**
-     * 触摸使用的移动事件
-     *
-     * @param lessX
-     * @param lessY
-     */
-    private void setSelfPivot(float lessX, float lessY) {
-        float setPivotX = 0;
-        float setPivotY = 0;
-        setPivotX = getPivotX() + lessX;
-        setPivotY = getPivotY() + lessY;
-        if (setPivotX < 0 && setPivotY < 0) {
-            setPivotX = 0;
-            setPivotY = 0;
-        } else if (setPivotX > 0 && setPivotY < 0) {
-            setPivotY = 0;
-            if (setPivotX > getWidth()) {
-                setPivotX = getWidth();
-            }
-        } else if (setPivotX < 0 && setPivotY > 0) {
-            setPivotX = 0;
-            if (setPivotY > getHeight()) {
-                setPivotY = getHeight();
-            }
-        } else {
-            if (setPivotX > getWidth()) {
-                setPivotX = getWidth();
-            }
-            if (setPivotY > getHeight()) {
-                setPivotY = getHeight();
-            }
+    @Override
+    public boolean onTouchEvent(MotionEvent event) {
+        float eventX = 0f;
+        float eventY = 0f;
+        float eventX1 = 0f;
+        float eventY1 = 0f;
+        int pointerCount = event.getPointerCount();
+        socketEmitter.sendTouchEvent(event, currentPaintType);
+        this.fragment.saveBitmap();
+        int eventType = event.getAction() & MotionEvent.ACTION_MASK;
+        if(pointerCount==2){
+            eventX = event.getX(0);
+            eventY = event.getY(0);
+            eventX1 = event.getX(1);
+            eventY1 = event.getY(1);
         }
-        setPivot(setPivotX, setPivotY);
-    }
-
-    /**
-     * 计算两个点的距离
-     *
-     * @param event
-     * @return
-     */
-    private double spacing(MotionEvent event) {
-        if (event.getPointerCount() == 2) {
-            float x = event.getX(0) - event.getX(1);
-            float y = event.getY(0) - event.getY(1);
-            return Math.sqrt(x * x + y * y);
-        } else {
-            return 0;
+        else if(pointerCount == 1){
+            eventX = event.getX();
+            eventY = event.getY();
         }
+        return dealWithTouchEvent(eventType,pointerCount,
+                eventX,eventY,eventX1,eventY1,localPointDraw,localPaths,currentPaintType);
     }
+//    @Override
+//    public boolean onTouchEvent(MotionEvent event) {
+//        float eventX = event.getX();
+//        float eventY = event.getY();
+//        float wigth = getWidth();
+//        float heigth = getHeight();
+//        int pointerCount = event.getPointerCount();
+//        socketEmitter.sendTouchEvent(event, currentPaintType);
+//        this.fragment.saveBitmap();
+//        switch (event.getAction() & MotionEvent.ACTION_MASK) {
+////            case MotionEvent.ACTION_UP:
+//////                scale.actionUP(event,pointerCount);
+////                MyLog.v(TAG,"ACTION UP--------------- ~~");
+////                break;
+//            case MotionEvent.ACTION_DOWN:
+//                if(pointerCount==2) {
+//                    MyLog.v(TAG,"ACTION DOWN ~~");
+//                    drawFlag = 0;
+//                }
+//                else {
+////                    testMatrix();
+//                    drawFlag = 1;
+//                    return startPath(eventX, eventY, currentPaintType, localPaths);
+//                }
+//            case MotionEvent.ACTION_MOVE:
+//                MyLog.v(TAG,"MOVING ~~");
+//                if(pointerCount==2) {
+//                    drawFlag = 0;
+//                    MyLog.v(TAG, "TWO POINT MOVING");
+//
+//                    np1[0] = event.getX(0);
+//                    np1[1] = event.getY(0);
+//                    np2[0] = event.getX(1);
+//                    np2[1] = event.getY(1);
+//                    MyLog.v(TAG,"TWO POINT MOVING:"+ np1[0]+","+np1[1]+","+np2[0]+","+np2[1]+","+
+//                            Arrays.toString(np1)+","+Arrays.toString(np2));
+//
+//                    setScale(op1,op2,np1,np2,wigth,heigth);
+////                    for (CanvasPath p : localPaths){
+////                        p.setScale(op1,op2,np1,np2,wigth,heigth);
+////                    }
+////                    for (CanvasPath p : globalPaths){
+////                        p.setScale(op1,op2,np1,np2,wigth,heigth);
+////                    }
+//
+//                }else {
+//                    if( drawFlag == 1 ) {
+//                        MyLog.v(TAG, "ONE POINT MOVING------------");
+//                        movePath(eventX, eventY, localPaths);
+//                    }
+//                }
+//                break;
+//            case MotionEvent.ACTION_POINTER_DOWN:
+//                drawFlag = 0;
+//                MyLog.v(TAG, "MUTI POINTDOWN------------");
+//                if(pointerCount==2) {
+//                    op1[0] = event.getX(0);
+//                    op1[1] = event.getY(0);
+//                    op2[0] = event.getX(1);
+//                    op2[1] = event.getY(1);
+//
+//                    MyLog.v(TAG,"TWO_POINTER_DOWN:"+ Arrays.toString(op1)+","+Arrays.toString(op2));
+////                    oldDist = spacing(event); //两点按下时的距离
+//                }
+//                break;
+//            case MotionEvent.ACTION_POINTER_UP:
+//                drawFlag = 0;
+//                if(pointerCount==2) {
+//                    MyLog.v(TAG, "TWO POINTUP");
+//                    updateOscale();
+////                    for (CanvasPath p : localPaths){
+////                        p.updateOscale();
+////                    }
+////                    for (CanvasPath p : globalPaths){
+////                        p.updateOscale();
+////                    }
+//                }
+//                break;
+//            case MotionEvent.ACTION_CANCEL:
+//            case MotionEvent.ACTION_UP:
+//                drawFlag = 0;
+//                break;
+//            default:
+//                return false;
+//        }
+//        invalidate();
+//        return true;
+//    }
 
-    /**
-     * 平移画面，当画面的宽或高大于屏幕宽高时，调用此方法进行平移
-     *
-     * @param x
-     * @param y
-     */
-    public void setPivot(float x, float y) {
-        setPivotX(x);
-        setPivotY(y);
-    }
-
-
-    /**
-     * 设置放大缩小
-     *
-     * @param scale
-     */
-    public void setScale(float scale) {
-        setScaleX(scale);
-        setScaleY(scale);
-    }
-
-    /**
-     * 初始化比例，也就是原始比例
-     */
-    public void setInitScale() {
-        setScaleX(1.0f);
-        setScaleY(1.0f);
-        setPivot(getWidth() / 2, getHeight() / 2);
-    }
+//    /**
+//     * 触摸使用的移动事件
+//     *
+//     * @param lessX
+//     * @param lessY
+//     */
+//    private void setSelfPivot(float lessX, float lessY) {
+//        float setPivotX = 0;
+//        float setPivotY = 0;
+//        setPivotX = getPivotX() + lessX;
+//        setPivotY = getPivotY() + lessY;
+//        if (setPivotX < 0 && setPivotY < 0) {
+//            setPivotX = 0;
+//            setPivotY = 0;
+//        } else if (setPivotX > 0 && setPivotY < 0) {
+//            setPivotY = 0;
+//            if (setPivotX > getWidth()) {
+//                setPivotX = getWidth();
+//            }
+//        } else if (setPivotX < 0 && setPivotY > 0) {
+//            setPivotX = 0;
+//            if (setPivotY > getHeight()) {
+//                setPivotY = getHeight();
+//            }
+//        } else {
+//            if (setPivotX > getWidth()) {
+//                setPivotX = getWidth();
+//            }
+//            if (setPivotY > getHeight()) {
+//                setPivotY = getHeight();
+//            }
+//        }
+//        setPivot(setPivotX, setPivotY);
+//    }
+//
+//    /**
+//     * 计算两个点的距离
+//     *
+//     * @param event
+//     * @return
+//     */
+//    private double spacing(MotionEvent event) {
+//        if (event.getPointerCount() == 2) {
+//            float x = event.getX(0) - event.getX(1);
+//            float y = event.getY(0) - event.getY(1);
+//            return Math.sqrt(x * x + y * y);
+//        } else {
+//            return 0;
+//        }
+//    }
+//
+//    /**
+//     * 平移画面，当画面的宽或高大于屏幕宽高时，调用此方法进行平移
+//     *
+//     * @param x
+//     * @param y
+//     */
+//    public void setPivot(float x, float y) {
+//        setPivotX(x);
+//        setPivotY(y);
+//    }
+//
+//
+//    /**
+//     * 设置放大缩小
+//     *
+//     * @param scale
+//     */
+//    public void setScale(float scale) {
+//        setScaleX(scale);
+//        setScaleY(scale);
+//    }
+//
+//    /**
+//     * 初始化比例，也就是原始比例
+//     */
+//    public void setInitScale() {
+//        setScaleX(1.0f);
+//        setScaleY(1.0f);
+//        setPivot(getWidth() / 2, getHeight() / 2);
+//    }
     public void setType(int type) {
         currentPaintType = type;
     }
@@ -459,6 +548,7 @@ public class CanvasView extends View {
     public void clear() {
         localPaths.clear();
         globalPaths.clear();
+//        localCanvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR);
         if (immutableBitmap != null)
             immutableBitmap.recycle();
         invalidate();

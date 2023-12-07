@@ -135,12 +135,24 @@ public class CanvasFragment extends Fragment implements SocketEventEmitter, View
      */
     public void sendTouchEvent(MotionEvent event, int paintType) {
         String eventType;
-        switch (event.getAction()) {
+        switch (event.getAction() & MotionEvent.ACTION_MASK) {
             case MotionEvent.ACTION_DOWN:
                 eventType = Constants.TOUCH_DOWN_EVENT;
                 break;
             case MotionEvent.ACTION_MOVE:
                 eventType = Constants.TOUCH_MOVE_EVENT;
+                break;
+            case MotionEvent.ACTION_POINTER_DOWN:
+                eventType = Constants.TOUCH_TWO_DOWN_EVENT;
+                break;
+            case MotionEvent.ACTION_POINTER_UP:
+                eventType = Constants.TOUCH_TWO_UP_EVENT;
+                break;
+            case MotionEvent.ACTION_CANCEL:
+                eventType = Constants.TOUCH_CANCEL_EVENT;
+                break;
+            case MotionEvent.ACTION_UP:
+                eventType = Constants.TOUCH_UP_EVENT;
                 break;
             default:
                 return; // Ignore irrelevant events.
@@ -148,8 +160,23 @@ public class CanvasFragment extends Fragment implements SocketEventEmitter, View
 
         JSONObject json = new JSONObject();
         try {
-            json.put(Constants.X_COORDINATE, ((double) event.getX() / width));
-            json.put(Constants.Y_COORDINATE, ((double) event.getY() / height));
+            float x=0,y=0,x1=0,y1=0;
+            int pointCount = event.getPointerCount();
+            if(pointCount == 1){
+                x = event.getX();
+                y = event.getY();
+            }
+            else if(pointCount == 2){
+                x = event.getX(0);
+                y = event.getY(0);
+                x1 = event.getX(1);
+                y1 = event.getY(1);
+            }
+            json.put(Constants.X_COORDINATE, ((double) x / width));
+            json.put(Constants.Y_COORDINATE, ((double) y / height));
+            json.put(Constants.X1_COORDINATE, ((double) x1 / width));
+            json.put(Constants.Y1_COORDINATE, ((double) y1 / height));
+            json.put(Constants.POINT_COUNT, pointCount);
             json.put(Constants.EVENT_TYPE, eventType);
             json.put(Constants.PAINT_TYPE, paintType);
         } catch (org.json.JSONException e) {
@@ -197,9 +224,7 @@ public class CanvasFragment extends Fragment implements SocketEventEmitter, View
 
         recording = !recording;
     }
-
     /* Socket Listeners */
-
     private Emitter.Listener onReceivedTouchEvent = new Emitter.Listener() {
         @Override
         public void call(final Object... args) {
@@ -209,20 +234,37 @@ public class CanvasFragment extends Fragment implements SocketEventEmitter, View
                 public void run() {
                     JSONObject json = (JSONObject) args[0];
                     try {
-                        float x = (float) (json.getDouble(Constants.X_COORDINATE) * width);
-                        float y = (float) (json.getDouble(Constants.Y_COORDINATE) * height);
-                        int paintType = json.getInt(Constants.PAINT_TYPE);
-
+                        int eventType = 0;
                         switch (json.getString(Constants.EVENT_TYPE)) {
                             case Constants.TOUCH_DOWN_EVENT:
-                                canvasView.startPath(x, y, paintType, canvasView.globalPaths);
+                                eventType = MotionEvent.ACTION_DOWN;
                                 break;
                             case Constants.TOUCH_MOVE_EVENT:
-                                canvasView.movePath(x, y, canvasView.globalPaths);
+                                eventType = MotionEvent.ACTION_MOVE;
+                                break;
+                            case Constants.TOUCH_TWO_DOWN_EVENT:
+                                eventType = MotionEvent.ACTION_POINTER_DOWN;
+                                break;
+                            case Constants.TOUCH_TWO_UP_EVENT:
+                                eventType = MotionEvent.ACTION_POINTER_UP;
+                                break;
+                            case Constants.TOUCH_CANCEL_EVENT:
+                                eventType = MotionEvent.ACTION_CANCEL;
+                                break;
+                            case Constants.TOUCH_UP_EVENT:
+                                eventType = MotionEvent.ACTION_UP;
                                 break;
                             default:
                                 return;
                         }
+                        float x = (float) (json.getDouble(Constants.X_COORDINATE) * width);
+                        float y = (float) (json.getDouble(Constants.Y_COORDINATE) * height);
+                        float x1 = (float) (json.getDouble(Constants.X1_COORDINATE) * width);
+                        float y1 = (float) (json.getDouble(Constants.Y1_COORDINATE) * height);
+                        int pointerCount = json.getInt(Constants.POINT_COUNT);
+                        int paintType = json.getInt(Constants.PAINT_TYPE);
+                        canvasView.dealWithTouchEvent(eventType,pointerCount,
+                                x,y,x1,y1,canvasView.globalPointDraw,canvasView.globalPaths,paintType);
                         canvasView.invalidate();
                     } catch (org.json.JSONException e) {
 
@@ -231,6 +273,39 @@ public class CanvasFragment extends Fragment implements SocketEventEmitter, View
             });
         }
     };
+    /* Socket Listeners */
+
+//    private Emitter.Listener onReceivedTouchEvent = new Emitter.Listener() {
+//        @Override
+//        public void call(final Object... args) {
+//            if (getActivity() == null) return;
+//            getActivity().runOnUiThread(new Runnable() {
+//                @Override
+//                public void run() {
+//                    JSONObject json = (JSONObject) args[0];
+//                    try {
+//                        float x = (float) (json.getDouble(Constants.X_COORDINATE) * width);
+//                        float y = (float) (json.getDouble(Constants.Y_COORDINATE) * height);
+//                        int paintType = json.getInt(Constants.PAINT_TYPE);
+//
+//                        switch (json.getString(Constants.EVENT_TYPE)) {
+//                            case Constants.TOUCH_DOWN_EVENT:
+//                                canvasView.startPath(x, y, paintType, canvasView.globalPaths);
+//                                break;
+//                            case Constants.TOUCH_MOVE_EVENT:
+//                                canvasView.movePath(x, y, canvasView.globalPaths);
+//                                break;
+//                            default:
+//                                return;
+//                        }
+//                        canvasView.invalidate();
+//                    } catch (org.json.JSONException e) {
+//
+//                    }
+//                }
+//            });
+//        }
+//    };
 
     private Emitter.Listener onMetadataReceived = new Emitter.Listener() {
         @Override
